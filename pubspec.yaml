@@ -37,6 +37,7 @@ dependencies:
   dio: ^4.0.0
   path_provider: ^2.0.2
   shared_preferences: ^0.4.3
+  delayed_display: ^2.0.0
 
 dev_dependencies:
   flutter_test:

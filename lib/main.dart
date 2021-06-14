@@ -8,6 +8,7 @@ import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:delayed_display/delayed_display.dart';
 
 void main() {
   runApp(MyApp());
@@ -231,9 +232,12 @@ class _MyHomePageState extends State<MyHomePage> {
                     )
                   : urlVideo != ''
                       ? Container(
-                          child: Center(
-                            child: Chewie(
-                              controller: _chewieController,
+                          child: DelayedDisplay(
+                            delay: Duration(seconds: 1),
+                            child: Center(
+                              child: Chewie(
+                                controller: _chewieController,
+                              ),
                             ),
                           ),
                         )
