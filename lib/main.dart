@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:downloads_path_provider/downloads_path_provider.dart';
+// import 'package:downloads_path_provider/downloads_path_provider.dart';
+import 'package:downloads_path_provider_28/downloads_path_provider_28.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
@@ -42,7 +43,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  MyHomePage({Key? key, this.title}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -53,7 +54,7 @@ class MyHomePage extends StatefulWidget {
   // used by the build method of the State. Fields in a Widget subclass are
   // always marked "final".
 
-  final String title;
+  final String? title;
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -62,38 +63,43 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   bool downloading = false;
   var progressString = "";
-  String urlVideo;
+  String? urlVideo;
 
-  VideoPlayerController _videoPlayerController2;
-  ChewieController _chewieController;
+  VideoPlayerController? _videoPlayerController2;
+  ChewieController? _chewieController;
 
   @override
   void initState() {
     super.initState();
+
     _loadPath();
   }
 
   void _loadPath() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      urlVideo = (prefs.getString('path') ?? '');
-      final File fileDir = File(urlVideo);
 
-      _videoPlayerController2 = VideoPlayerController.file(fileDir);
+    urlVideo = (prefs.getString('path') ?? '');
 
+    final File fileDir = File(urlVideo!);
+
+    _videoPlayerController2 = VideoPlayerController.file(fileDir);
+
+    if (urlVideo != '') {
+      await Future.wait([_videoPlayerController2!.initialize()]);
       _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController2,
+        videoPlayerController: _videoPlayerController2!,
         autoPlay: true,
         looping: true,
         aspectRatio: 16 / 9,
       );
-    });
+    }
+    setState(() {});
   }
 
   @override
   void dispose() {
-    _videoPlayerController2.dispose();
-    _chewieController.dispose();
+    _videoPlayerController2!.dispose();
+    _chewieController!.dispose();
     super.dispose();
   }
 
@@ -122,9 +128,9 @@ class _MyHomePageState extends State<MyHomePage> {
     var audio = manifest.muxed.first;
 
     // Build the directory.
-    var dir = await DownloadsPathProvider.downloadsDirectory;
+    var dir = await (DownloadsPathProvider.downloadsDirectory);
     var filePath =
-        path.join(dir.uri.toFilePath(), '${video.id}.${audio.container.name}');
+        path.join(dir!.uri.toFilePath(), '${video.id}.${audio.container.name}');
 
     // Open the file to write.
     var file = File(filePath);
@@ -164,20 +170,20 @@ class _MyHomePageState extends State<MyHomePage> {
     prefs.setString('path', '${filePath}');
     print(prefs.getString('path'));
 
+    final File fileDir = File('${filePath}');
+    _videoPlayerController2 = VideoPlayerController.file(fileDir);
+    await Future.wait([_videoPlayerController2!.initialize()]);
+    _chewieController = ChewieController(
+      videoPlayerController: _videoPlayerController2!,
+      autoPlay: true,
+      looping: true,
+      aspectRatio: 16 / 9,
+    );
+
     setState(() {
       downloading = false;
       progressString = "Completed";
       urlVideo = '${filePath}';
-      final File fileDir = File(urlVideo);
-
-      _videoPlayerController2 = VideoPlayerController.file(fileDir);
-
-      _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController2,
-        autoPlay: true,
-        looping: true,
-        aspectRatio: 16 / 9,
-      );
     });
 
     // Show that the file was downloaded.
@@ -195,7 +201,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(widget.title!),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -207,42 +213,52 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
                 child: Text('Descargar')),
             Center(
-              child: downloading
-                  ? Container(
-                      height: 120.0,
-                      width: 200.0,
-                      child: Card(
-                        color: Colors.black,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: <Widget>[
-                            CircularProgressIndicator(),
-                            SizedBox(
-                              height: 20.0,
-                            ),
-                            Text(
-                              "Downloading File: $progressString",
-                              style: TextStyle(
-                                color: Colors.white,
+                child: downloading
+                    ? Container(
+                        height: 120.0,
+                        width: 200.0,
+                        child: Card(
+                          color: Colors.black,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              CircularProgressIndicator(),
+                              SizedBox(
+                                height: 20.0,
                               ),
-                            )
-                          ],
-                        ),
-                      ),
-                    )
-                  : urlVideo != ''
-                      ? Container(
-                          child: DelayedDisplay(
-                            delay: Duration(seconds: 1),
-                            child: Center(
-                              child: Chewie(
-                                controller: _chewieController,
-                              ),
-                            ),
+                              Text(
+                                "Downloading File: $progressString",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                ),
+                              )
+                            ],
                           ),
-                        )
-                      : Text('No data'),
-            ),
+                        ),
+                      )
+                    : Container(
+                        child: DelayedDisplay(
+                          delay: Duration(seconds: 1),
+                          child: Center(
+                            child: _chewieController != null &&
+                                    _chewieController!.videoPlayerController
+                                        .value.isInitialized
+                                ? Chewie(
+                                    controller: _chewieController!,
+                                  )
+                                : Text('No data'),
+                            //   Column(
+                            //       mainAxisAlignment:
+                            //           MainAxisAlignment.center,
+                            //       children: const [
+                            //         CircularProgressIndicator(),
+                            //         SizedBox(height: 20),
+                            //         Text('Loading'),
+                            //       ],
+                            //     ),
+                          ),
+                        ),
+                      )),
           ],
         ),
       ), // This trailing comma makes auto-formatting nicer for build methods.
